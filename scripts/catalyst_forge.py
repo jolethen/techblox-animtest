@@ -11,8 +11,8 @@ class CatalystForgeStory(Scene):
         location_tag = Text("[ LOCATION: SECTOR 4 - CATALYST FORGE ]", font="Monospace", font_size=16, color=TEAL_C)
         location_tag.to_corner(UL, buff=0.5)
 
-        quote_line1 = Text('"We\'re pushing past 50 Mana units this time."', font="Sans", font_size=24, color=WHITE)
-        quote_line2 = Text('"The curve isn\'t linear, Rook. Watch the telemetry."', font="Sans", font_size=22, color=GREY_A, italic=True)
+        quote_line1 = Text('"We\'re pushing past 50 Mana units this time."', font_size=24, color=WHITE)
+        quote_line2 = Text('"The curve isn\'t linear, Rook. Watch the telemetry."', font_size=22, color=GREY_A, slant=ITALIC)
         
         narrative_box = VGroup(quote_line1, quote_line2).arrange(DOWN, buff=0.25)
         
@@ -105,7 +105,7 @@ class CatalystForgeStory(Scene):
         # =====================================================================
         # Header setup
         header_tag = Text("TELEMETRY LOG #0492", font="Monospace", font_size=18, color=GREY_A)
-        header_title = Text("Mana-to-Damage Yield Curve", font="Sans", font_size=28, weight=BOLD, color=CYAN)
+        header_title = Text("Mana-to-Damage Yield Curve", font_size=28, weight=BOLD, color=CYAN)
         header_group = VGroup(header_tag, header_title).arrange(DOWN, aligned_edge=LEFT, buff=0.1).to_corner(UL, buff=0.5)
 
         # Graph Axes
@@ -192,9 +192,10 @@ class CatalystForgeStory(Scene):
         self.play(graph_tracker.animate.set_value(80), run_time=2.0, rate_func=smooth)
         
         # Highlight Callout at Strike Point
-        callout_label = Text("Exponential Yield Threshold", font="Sans", font_size=15, color=YELLOW)
+        callout_label = Text("Exponential Yield Threshold", font_size=15, color=YELLOW)
         callout_label.next_to(tracker_dot, LEFT, buff=0.4).shift(UP * 0.3)
         callout_arrow = Arrow(start=callout_label.get_right(), end=tracker_dot.get_left(), color=YELLOW, buff=0.1, max_tip_length_to_length_ratio=0.25)
 
         self.play(Write(callout_label), Create(callout_arrow), run_time=0.8)
         self.wait(2.5)
+        
