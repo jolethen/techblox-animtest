@@ -46,14 +46,14 @@ class CatalystForgeStory(Scene):
         core_glow = Circle(radius=1.2, color=CYAN_HEX, stroke_width=8, fill_opacity=0.0)
         core_center = Dot(point=ORIGIN, radius=0.15, color=WHITE)
         
-        # Dynamic Counter setup (Efficient DecimalNumber instead of Pango Text re-render)
         mana_units = ValueTracker(10)
         
-        mana_num = Integer(10, font_size=28, color=CYAN_HEX)
+        # FIXED: DecimalNumber using mob_class=Text so no LaTeX call is made
+        mana_num = DecimalNumber(10, num_decimal_places=0, mob_class=Text, font_size=28, color=CYAN_HEX)
         mana_label = Text(" MANA", font_size=28, color=CYAN_HEX)
         unit_counter = VGroup(mana_num, mana_label).arrange(RIGHT, buff=0.15).move_to(core_ring.get_center())
         
-        mana_num.add_updater(lambda m: m.set_value(int(mana_units.get_value())))
+        mana_num.add_updater(lambda m: m.set_value(mana_units.get_value()))
         unit_counter.add_updater(lambda c: c.move_to(core_ring.get_center()))
 
         self.play(Write(charge_title), Create(core_ring), FadeIn(core_center), FadeIn(unit_counter), run_time=1.0)
@@ -91,8 +91,9 @@ class CatalystForgeStory(Scene):
         )
         self.wait(1.0)
 
-        # Clean up Act 2 (Clear updaters before fading)
+        # Clean up Act 2
         unit_counter.clear_updaters()
+        mana_num.clear_updaters()
         self.play(
             FadeOut(charge_title),
             FadeOut(core_ring),
@@ -121,12 +122,14 @@ class CatalystForgeStory(Scene):
                 "stroke_width": 2,
                 "include_numbers": True,
                 "font_size": 16,
+                "number_mobject_factory": Text,
             },
             tips=False
         ).shift(DOWN * 0.5 + LEFT * 0.8)
 
-        x_label = axes.get_x_axis_label("Mana Units", edge=RIGHT, direction=RIGHT * 0.3).scale(0.55).set_color(TEAL_B)
-        y_label = axes.get_y_axis_label("Damage Output", edge=UP, direction=UP * 0.3).scale(0.55).set_color(LIGHT_PINK)
+        # FIXED: Explicit Text objects bypass MathTex entirely
+        x_label = axes.get_x_axis_label(Text("Mana Units", font_size=14), edge=RIGHT, direction=RIGHT * 0.3).set_color(TEAL_B)
+        y_label = axes.get_y_axis_label(Text("Damage Output", font_size=14), edge=UP, direction=UP * 0.3).set_color(LIGHT_PINK)
 
         # Formula: D(m) = 0.25 * m^1.5
         def yield_curve(m):
@@ -146,7 +149,6 @@ class CatalystForgeStory(Scene):
             )
         )
         
-        # Robust Guideline coordinates via screen space
         guidelines = AlwaysRedraw(
             lambda: axes.get_lines_to_point(
                 axes.c2p(graph_tracker.get_value(), yield_curve(graph_tracker.get_value())),
@@ -162,22 +164,29 @@ class CatalystForgeStory(Scene):
         
         stat_header = Text("READOUT", font_size=14, color=GREY_A).next_to(stat_box.get_top(), DOWN, buff=0.15)
         
-        # Dynamic numerical readouts using Integers (Fast & No wobbly text)
-        mana_readout_val = Integer(10, font_size=16, color=TEAL_B)
+        mana_readout_val = DecimalNumber(10, num_decimal_places=0, mob_class=Text, font_size=16, color=TEAL_B)
         mana_readout_lbl = Text("Mana: ", font_size=16, color=TEAL_B)
         mana_readout_unit = Text(" U", font_size=16, color=TEAL_B)
         readout_mana_grp = VGroup(mana_readout_lbl, mana_readout_val, mana_readout_unit).arrange(RIGHT, buff=0.1)
         readout_mana_grp.move_to(stat_box.get_center() + UP * 0.25)
 
-        dmg_readout_val = Integer(8, font_size=16, color=LIGHT_PINK)
+        dmg_readout_val = DecimalNumber(8, num_decimal_places=0, mob_class=Text, font_size=16, color=LIGHT_PINK)
         dmg_readout_lbl = Text("Damage: ", font_size=16, color=LIGHT_PINK)
         dmg_readout_unit = Text(" HP", font_size=16, color=LIGHT_PINK)
         readout_dmg_grp = VGroup(dmg_readout_lbl, dmg_readout_val, dmg_readout_unit).arrange(RIGHT, buff=0.1)
         readout_dmg_grp.move_to(stat_box.get_center() + DOWN * 0.25)
 
-        # Fast Updaters
-        mana_readout_val.add_updater(lambda m: m.set_value(int(graph_tracker.get_value())))
-        dmg_readout_val.add_updater(lambda d: d.set_value(int(yield_curve(graph_tracker.get_value()))))
+        # Updaters with dynamic layout recalculation
+        def update_mana_readout(m):
+            m.set_value(graph_tracker.get_value())
+            readout_mana_grp.arrange(RIGHT, buff=0.1).move_to(stat_box.get_center() + UP * 0.25)
+
+        def update_dmg_readout(d):
+            d.set_value(yield_curve(graph_tracker.get_value()))
+            readout_dmg_grp.arrange(RIGHT, buff=0.1).move_to(stat_box.get_center() + DOWN * 0.25)
+
+        mana_readout_val.add_updater(update_mana_readout)
+        dmg_readout_val.add_updater(update_dmg_readout)
 
         # Entrance Animations
         self.play(Write(header_group), Create(axes), FadeIn(x_label), FadeIn(y_label), run_time=1.2)
@@ -192,7 +201,6 @@ class CatalystForgeStory(Scene):
             run_time=0.8
         )
 
-        # Dynamic Sweep matching story progression
         self.wait(0.5)
         
         # 10 -> 40 Mana
